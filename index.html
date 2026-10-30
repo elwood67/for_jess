@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16222a">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:border-box}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Agates for Jess</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gloock&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one full-screen river scene at dusk; overlays (intro, opened stone, finale) float above it. Single committed dusk look. */
+:root{
+  --night:#16222a;
+  --ink:#f7efe4;
+  --muted:#c4b6a6;
+  --glow:#f3b46a;
+  --ember:#d9784a;
+  --card:rgba(22,34,42,.86);
+  --line:rgba(247,239,228,.16);
+  --display:'Gloock', Georgia, 'Times New Roman', serif;
+  --letter:'Newsreader', Georgia, 'Times New Roman', serif;
+  --ui:'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--night);color:var(--ink);font-family:var(--ui);overflow:hidden;-webkit-tap-highlight-color:transparent}
+canvas.layer{position:fixed;inset:0;width:100%;height:100%;display:block}
+#field{position:fixed;inset:0}
+
+.agate{position:absolute;border:0;background:none;padding:0;cursor:pointer;transform:translate(-50%,-50%);border-radius:50%;transition:transform .25s ease}
+.agate canvas{width:100%;height:100%;display:block;pointer-events:none}
+.agate:hover{transform:translate(-50%,-50%) scale(1.08)}
+.agate:focus-visible{outline:2px solid var(--glow);outline-offset:4px}
+.agate::after{content:"";position:absolute;width:22px;height:22px;left:58%;top:18%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,244,214,.95) 0 8%,rgba(255,220,160,.35) 22%,transparent 60%);
+  clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%);
+  opacity:0;animation:glint 4.2s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes glint{0%,70%,100%{opacity:0;transform:scale(.3) rotate(0)}80%{opacity:1;transform:scale(1) rotate(25deg)}}
+.agate.found{visibility:hidden;pointer-events:none}
+
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:20;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-bottom,0px));
+  background:rgba(12,18,23,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  transition:opacity .5s ease}
+.overlay.fade{opacity:0;pointer-events:none}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;max-width:430px;width:100%;
+  padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.eyebrow{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--glow);font-weight:600}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(1.8rem,6vw,2.4rem);line-height:1.1;margin:0;text-wrap:balance}
+.lede{font-family:var(--letter);font-style:italic;font-size:1.12rem;line-height:1.5;color:var(--muted);margin:0;max-width:34ch}
+.btn{font:600 1rem var(--ui);color:#2a1a0e;background:var(--glow);border:0;border-radius:999px;padding:12px 26px;cursor:pointer;
+  box-shadow:0 6px 20px rgba(243,180,106,.3);transition:transform .15s ease,background .2s}
+.btn:hover{transform:translateY(-1px);background:#f7c587}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+
+#reveal .panel{gap:10px}
+#bigStone{width:170px;height:170px;max-width:100%;animation:lift .9s cubic-bezier(.2,.8,.2,1)}
+@keyframes lift{from{transform:translateY(40px) scale(.4) rotate(-30deg);opacity:0}to{transform:none;opacity:1}}
+.stoneName{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.note{font-family:var(--letter);font-style:italic;font-size:clamp(1.15rem,4.4vw,1.35rem);line-height:1.5;margin:4px 0 8px;max-width:32ch;text-wrap:pretty}
+
+#pouch{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:10px max(14px,env(safe-area-inset-bottom,0px));
+  background:linear-gradient(to top,rgba(14,20,25,.85),rgba(14,20,25,0))}
+#slots{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.slot{width:34px;height:34px;border-radius:50%;border:1px dashed rgba(247,239,228,.3);display:grid;place-items:center}
+.slot canvas{width:34px;height:34px}
+.slot.full{border-color:transparent;animation:pop .5s ease}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+#count{font-size:.78rem;color:var(--muted);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+
+#finale{align-items:flex-start;overflow-y:auto;background:rgba(12,18,23,.7)}
+#finale .panel{margin-block:auto;gap:12px}
+#heartBox{position:relative;width:min(300px,100%);aspect-ratio:1/0.92;max-width:100%}
+#heartBox canvas{position:absolute;inset:0;width:100%;height:100%}
+.hs{position:absolute;width:44px;height:44px;transform:translate(-50%,-50%) scale(0);animation:settle .7s cubic-bezier(.2,.9,.3,1.3) forwards}
+@keyframes settle{to{transform:translate(-50%,-50%) scale(1)}}
+.sign{font-family:var(--letter);font-style:italic;font-size:1.2rem;color:var(--glow);margin:0}
+#allNotes{list-style:none;margin:6px 0 0;padding:14px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px;text-align:left;width:100%}
+#allNotes li{font-family:var(--letter);font-style:italic;font-size:1rem;line-height:1.45;color:var(--muted);display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start}
+#allNotes canvas{width:22px;height:22px;margin-top:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+@media (prefers-reduced-motion: reduce){
+  .agate::after{animation:none;opacity:.8;transform:scale(.8)}
+  #bigStone,.slot.full{animation:none}
+  .hs{animation:none;transform:translate(-50%,-50%) scale(1)}
+}
+</style>
+</head>
+<body>
+
+
+<canvas class="layer" id="river" aria-hidden="true"></canvas>
+<canvas class="layer" id="gravel" aria-hidden="true"></canvas>
+<div id="field" aria-label="Gravel bar with hidden agates"></div>
+
+<div id="pouch" hidden>
+  <div id="slots"></div>
+  <div id="count">0 of 7 found</div>
+</div>
+
+<div class="overlay" id="intro">
+  <div class="panel">
+    <div class="eyebrow">Middle Fork · Piedra River</div>
+    <h1>Jess, the river left something for you.</h1>
+    <p class="lede">Seven agates are hiding in the gravel. Look for the ones that catch the light, and tap to crack them open.</p>
+    <button class="btn" id="startBtn" type="button">Start looking</button>
+  </div>
+</div>
+
+<div class="overlay fade" id="reveal" role="dialog" aria-modal="true" aria-labelledby="noteText" hidden>
+  <div class="panel">
+    <canvas id="bigStone" width="340" height="340" aria-hidden="true"></canvas>
+    <div class="stoneName" id="stoneName"></div>
+    <p class="note" id="noteText"></p>
+    <button class="btn" id="keepBtn" type="button">Put it in my pocket</button>
+  </div>
+</div>
+
+<div class="overlay fade" id="finale" role="dialog" aria-modal="true" aria-labelledby="finaleTitle" hidden>
+  <div class="panel">
+    <div class="eyebrow">Seven of seven</div>
+    <div id="heartBox"><canvas id="heartLine" aria-hidden="true"></canvas></div>
+    <h1 id="finaleTitle">I love you, Jess.</h1>
+    <p class="lede">Every one of these was already yours. Spending my life with you is the best find I'll ever make.</p>
+    <p class="sign">Dave</p>
+    <div class="row">
+      <button class="btn ghost" id="readBtn" type="button">Read them all again</button>
+      <button class="btn" id="againBtn" type="button">Hunt again</button>
+    </div>
+    <ul id="allNotes" hidden></ul>
+  </div>
+</div>
+
+<script>
+(() => {
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const NOTES = [
+  "Out of every stone on this river, I'd still pick you first. Every single time.",
+  "You have a way of finding the shine in things. In rocks, in people, and in me on my worst days.",
+  "Building a life and a business next to you is the best work I've ever done.",
+  "Five years ago we each took home a puppy from the same litter, before we were even friends. Now the brothers are back together, and so are we. I think they knew first.",
+  "Some of my favorite hours are just us, wet boots and heads down, walking the river. I don't need anything more than that.",
+  "Pagosa, the mountains, this river. None of it would feel like home without you in it.",
+  "I love you more than I'll ever know how to say. I love spending my life with you."
+];
+
+const STONES = [
+  {name:"Carnelian", pal:["#6e2617","#c4613a","#f2cfa6","#a2402a","#fbe8d2","#d98552"]},
+  {name:"Blue lace", pal:["#34506b","#9db5cd","#eef2f6","#6a8baa","#d6e2ec","#4c6c8c"]},
+  {name:"Honey", pal:["#7a4c16","#d79d47","#f6e0b4","#b7792c","#fbefd3","#e2b464"]},
+  {name:"Moss", pal:["#434d31","#97a074","#e8e5d0","#6d7a4c","#d3d6b8","#5a6640"]},
+  {name:"Pink plume", pal:["#6f3e4a","#d29aa4","#f7e5e4","#a8606e","#ecc7c9","#8c4c5a"]},
+  {name:"Smoky band", pal:["#3f3935","#9a8e84","#ece4dc","#6b615a","#cfc4ba","#544b45"]},
+  {name:"Fire", pal:["#4e2316","#d7772b","#f4c86c","#9e3f1c","#fff0cc","#e89a3c"]}
+];
+
+function rng(seed){ let a = seed>>>0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+/* ---------- agate drawing ---------- */
+function blob(r, n){
+  const pts=[];
+  for(let i=0;i<n;i++){ const a=i/n*Math.PI*2 + r()*0.35; const k=0.8+r()*0.2; pts.push([Math.cos(a)*k, Math.sin(a)*k*0.86]); }
+  return pts;
+}
+function trace(ctx, pts, cx, cy, R, wob){
+  const p = pts.map(([x,y],i)=>[cx + x*R*(1+(wob?wob[i]:0)), cy + y*R*(1+(wob?wob[i]:0))]);
+  const m = (a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
+  ctx.beginPath();
+  let s = m(p[p.length-1], p[0]); ctx.moveTo(s[0], s[1]);
+  for(let i=0;i<p.length;i++){ const q=p[i], n=m(p[i], p[(i+1)%p.length]); ctx.quadraticCurveTo(q[0],q[1],n[0],n[1]); }
+  ctx.closePath();
+}
+function drawAgate(canvas, px, idx, open, seed){
+  const dpr = Math.min(window.devicePixelRatio||1, 3);
+  canvas.width = px*dpr; canvas.height = px*dpr;
+  const ctx = canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,px,px);
+  const r = rng(seed), pal = STONES[idx].pal, shape = blob(r, 11);
+  const cx = px/2, cy = px/2, R = px*0.44;
+  if(!open){
+    // tumbled, rough outside with translucent glow
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=px*0.12; ctx.shadowOffsetY=px*0.05;
+    trace(ctx, shape, cx, cy, R);
+    const g = ctx.createRadialGradient(cx-R*0.3, cy-R*0.35, R*0.1, cx, cy, R*1.1);
+    g.addColorStop(0, pal[4]); g.addColorStop(0.45, pal[5]); g.addColorStop(1, pal[0]);
+    ctx.fillStyle=g; ctx.fill(); ctx.restore();
+    ctx.save(); trace(ctx, shape, cx, cy, R); ctx.clip();
+    ctx.globalAlpha=0.28; ctx.lineWidth=px*0.03;
+    for(let k=1;k<5;k++){ trace(ctx, shape, cx+R*0.08, cy+R*0.05, R*(1-k*0.17)); ctx.strokeStyle=pal[k%2?2:3]; ctx.stroke(); }
+    ctx.globalAlpha=1;
+    const h = ctx.createRadialGradient(cx-R*0.38, cy-R*0.42, 0, cx-R*0.38, cy-R*0.42, R*0.55);
+    h.addColorStop(0,'rgba(255,250,240,.75)'); h.addColorStop(1,'rgba(255,250,240,0)');
+    ctx.fillStyle=h; ctx.fillRect(0,0,px,px);
+    ctx.restore();
+    return;
+  }
+  // cracked open and polished: concentric bands to a crystal heart
+  const B = 9 + Math.floor(r()*5);
+  trace(ctx, shape, cx, cy, R); ctx.fillStyle=pal[0]; ctx.fill();
+  let ox=0, oy=0;
+  for(let k=1;k<=B;k++){
+    const s = 1 - k/(B+2.2);
+    ox += (r()-0.5)*R*0.05; oy += (r()-0.5)*R*0.05;
+    const wob = shape.map(()=> (r()-0.5)*0.08*(k/B));
+    trace(ctx, shape, cx+ox, cy+oy, R*s, wob);
+    ctx.fillStyle = pal[(k % (pal.length-1)) + 1]; ctx.fill();
+    if(k%3===0){ ctx.lineWidth=Math.max(0.6, px*0.006); ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.stroke(); }
+  }
+  // drusy quartz centre
+  const cr = R*0.17;
+  trace(ctx, shape, cx+ox, cy+oy, cr); ctx.fillStyle='#f4efe6'; ctx.fill();
+  ctx.save(); trace(ctx, shape, cx+ox, cy+oy, cr); ctx.clip();
+  for(let i=0;i<Math.max(8,px/6);i++){ const a=r()*Math.PI*2, d=r()*cr; ctx.fillStyle=`rgba(255,255,255,${0.5+r()*0.5})`;
+    const x=cx+ox+Math.cos(a)*d, y=cy+oy+Math.sin(a)*d, s=Math.max(0.8,px*0.012);
+    ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x+s*0.6,y); ctx.lineTo(x,y+s); ctx.lineTo(x-s*0.6,y); ctx.fill(); }
+  ctx.restore();
+  // polish sheen + rind
+  ctx.save(); trace(ctx, shape, cx, cy, R); ctx.clip();
+  const sh = ctx.createLinearGradient(cx-R, cy-R, cx+R*0.4, cy+R*0.4);
+  sh.addColorStop(0,'rgba(255,255,255,.38)'); sh.addColorStop(0.45,'rgba(255,255,255,0)'); sh.addColorStop(1,'rgba(0,0,0,.18)');
+  ctx.fillStyle=sh; ctx.fillRect(0,0,px,px); ctx.restore();
+  trace(ctx, shape, cx, cy, R); ctx.lineWidth=Math.max(1,px*0.022); ctx.strokeStyle='rgba(40,25,18,.7)'; ctx.stroke();
+}
+
+/* ---------- scene ---------- */
+const riverC = document.getElementById('river'), gravelC = document.getElementById('gravel');
+const rctx = riverC.getContext('2d'), gctx = gravelC.getContext('2d');
+let W=0, H=0, DPR=1, skyH=0, shoreBase=0, trees=[], streaks=[];
+const shoreY = x => shoreBase + Math.sin(x/W*Math.PI*1.6 + 0.6)*H*0.025 + Math.sin(x/W*Math.PI*5.3)*H*0.008;
+
+function size(){
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = innerWidth; H = innerHeight;
+  for(const c of [riverC, gravelC]){ c.width=W*DPR; c.height=H*DPR; c.getContext('2d').setTransform(DPR,0,0,DPR,0,0); }
+  skyH = H*0.13; shoreBase = H*(W<600 ? 0.38 : 0.42);
+  const r = rng(77); trees=[];
+  for(let x=-20; x<W+20; x+= 9 + r()*14){ trees.push({x, h: H*0.05 + r()*H*0.07, w: 10 + r()*12}); }
+  streaks=[]; const n = Math.round(W*H/9000);
+  for(let i=0;i<n;i++) streaks.push({y:r(), x:r(), len:20+r()*90, a:0.06+r()*0.18, sp:0.5+r()});
+  drawGravel(); drawRiver(0); placeAgates();
+}
+
+function drawRiver(t){
+  const c = rctx; c.clearRect(0,0,W,H);
+  const sky = c.createLinearGradient(0,0,0,skyH+H*0.05);
+  sky.addColorStop(0,'#1d2a38'); sky.addColorStop(0.55,'#5a4a58'); sky.addColorStop(1,'#e49a5c');
+  c.fillStyle=sky; c.fillRect(0,0,W,skyH+H*0.06);
+  // water body
+  const wg = c.createLinearGradient(0,skyH,0,shoreBase+H*0.06);
+  wg.addColorStop(0,'#6c5a58'); wg.addColorStop(0.12,'#2e4a54'); wg.addColorStop(1,'#1f3a43');
+  c.fillStyle=wg; c.fillRect(0,skyH,W,H-skyH);
+  // sunset reflection column
+  const sx = W*0.72;
+  const rg = c.createRadialGradient(sx, skyH+4, 0, sx, skyH+4, H*0.3);
+  rg.addColorStop(0,'rgba(243,180,106,.35)'); rg.addColorStop(1,'rgba(243,180,106,0)');
+  c.fillStyle=rg; c.fillRect(0,skyH,W,shoreBase-skyH+H*0.05);
+  // flowing streaks
+  const rh = shoreBase + H*0.04 - skyH;
+  c.lineCap='round';
+  for(const s of streaks){
+    const y = skyH + 6 + s.y*rh;
+    const depth = (y-skyH)/rh;
+    let x = ((s.x*(W+240)) + t*0.03*s.sp*(0.6+depth)) % (W+240) - 120;
+    const near = 1 - Math.min(1, Math.abs(x - sx)/(W*0.22));
+    c.strokeStyle = near>0.15 ? `rgba(247,200,140,${s.a*1.6*near+0.04})` : `rgba(200,225,230,${s.a*0.7})`;
+    c.lineWidth = 1 + depth*1.6;
+    c.beginPath(); c.moveTo(x,y); c.lineTo(x+s.len*(0.6+depth), y + Math.sin(t*0.002+s.x*9)*1.2); c.stroke();
+  }
+  // far bank pines
+  c.fillStyle='#111a20';
+  c.fillRect(0, skyH-2, W, 6);
+  for(const tr of trees){
+    c.beginPath(); c.moveTo(tr.x, skyH-tr.h); c.lineTo(tr.x+tr.w/2, skyH+2); c.lineTo(tr.x-tr.w/2, skyH+2); c.fill();
+  }
+}
+
+function drawGravel(){
+  const c = gctx; c.clearRect(0,0,W,H);
+  c.beginPath(); c.moveTo(0, shoreY(0));
+  for(let x=0;x<=W;x+=8) c.lineTo(x, shoreY(x));
+  c.lineTo(W,H); c.lineTo(0,H); c.closePath();
+  const bg = c.createLinearGradient(0, shoreBase, 0, H);
+  bg.addColorStop(0,'#3a3530'); bg.addColorStop(0.15,'#5a5048'); bg.addColorStop(1,'#2c2723');
+  c.fillStyle=bg; c.fill();
+  c.save(); c.clip();
+  const r = rng(2024), rocks=[];
+  const n = Math.min(900, Math.round(W*(H-shoreBase)/700));
+  for(let i=0;i<n;i++){
+    const x = r()*W, top = shoreY(x), y = top + r()*(H-top+10);
+    const d = (y-top)/(H-top);
+    rocks.push({x,y,d, rx:(3+r()*9)*(0.55+d*0.9), ry:0, rot:r()*Math.PI, h:20+r()*25, s:6+r()*14, l:28+r()*30});
+  }
+  rocks.sort((a,b)=>a.y-b.y);
+  for(const k of rocks){
+    k.ry = k.rx*(0.55+((k.s*7)%5)/12);
+    c.save(); c.translate(k.x,k.y); c.rotate(k.rot*0.3);
+    c.fillStyle='rgba(10,8,6,.35)'; c.beginPath(); c.ellipse(1,k.ry*0.35,k.rx,k.ry,0,0,Math.PI*2); c.fill();
+    c.fillStyle=`hsl(${k.h},${k.s}%,${k.l*(0.75+k.d*0.35)}%)`; c.beginPath(); c.ellipse(0,0,k.rx,k.ry,0,0,Math.PI*2); c.fill();
+    c.fillStyle='rgba(255,226,190,.16)'; c.beginPath(); c.ellipse(k.rx*0.25,-k.ry*0.3,k.rx*0.5,k.ry*0.4,0,0,Math.PI*2); c.fill();
+    c.restore();
+  }
+  // wet edge and warm light from the west
+  const wet = c.createLinearGradient(0, shoreBase-H*0.03, 0, shoreBase+H*0.08);
+  wet.addColorStop(0,'rgba(20,35,40,.6)'); wet.addColorStop(1,'rgba(20,35,40,0)');
+  c.fillStyle=wet; c.fillRect(0,0,W,H);
+  const warm = c.createRadialGradient(W*0.75, shoreBase, 0, W*0.75, shoreBase, Math.max(W,H)*0.7);
+  warm.addColorStop(0,'rgba(243,170,100,.14)'); warm.addColorStop(1,'rgba(243,170,100,0)');
+  c.fillStyle=warm; c.fillRect(0,0,W,H);
+  c.restore();
+}
+
+let last=0;
+function loop(t){ if(t-last>30){ drawRiver(t); last=t; } requestAnimationFrame(loop); }
+
+/* ---------- agates ---------- */
+const field = document.getElementById('field');
+let found = [], order = [];   // found: stone indices in order found
+const seeds = [11,23,37,41,53,67,79];
+const btns = STONES.map((s,i)=>{
+  const b = document.createElement('button'); b.type='button'; b.className='agate';
+  b.setAttribute('aria-label','Agate glinting in the gravel');
+  b.style.setProperty('--d', (i*0.6 + (i%3)*0.9).toFixed(1)+'s');
+  const cv = document.createElement('canvas'); b.appendChild(cv);
+  b.addEventListener('click', ()=>openStone(i));
+  field.appendChild(b); return b;
+});
+
+function placeAgates(){
+  const r = rng(Date.now() % 100000);
+  const pts=[]; const pad = 36, bottom = H - 110;
+  for(let i=0;i<STONES.length;i++){
+    let best=null, bestD=-1;
+    for(let tries=0; tries<60; tries++){
+      const x = pad + r()*(W-pad*2);
+      const top = shoreY(x) + 34;
+      const y = top + r()*Math.max(10, bottom-top);
+      const d = pts.reduce((m,p)=>Math.min(m, Math.hypot(p[0]-x,p[1]-y)), 1e9);
+      if(d>bestD){ bestD=d; best=[x,y]; }
+      if(d>110) break;
+    }
+    pts.push(best);
+  }
+  pts.forEach(([x,y],i)=>{
+    const depth = (y-shoreBase)/(H-shoreBase);
+    const px = Math.round(40 + depth*16);
+    const b = btns[i]; b.style.left=x+'px'; b.style.top=y+'px'; b.style.width=px+'px'; b.style.height=px+'px';
+    drawAgate(b.firstChild, px, i, false, seeds[i]);
+  });
+}
+
+/* ---------- flow ---------- */
+const $ = id => document.getElementById(id);
+const intro=$('intro'), reveal=$('reveal'), finale=$('finale'), pouch=$('pouch');
+function show(el){ el.hidden=false; requestAnimationFrame(()=>el.classList.remove('fade')); }
+function hide(el, then){ el.classList.add('fade'); setTimeout(()=>{ el.hidden=true; then&&then(); }, 450); }
+
+function buildSlots(){
+  $('slots').innerHTML='';
+  for(let i=0;i<STONES.length;i++){ const s=document.createElement('div'); s.className='slot'; $('slots').appendChild(s); }
+}
+let current = -1;
+function openStone(i){
+  if(found.includes(i)) return;
+  current = i; btns[i].classList.add('found');
+  const big = $('bigStone'); big.style.animation='none'; big.offsetWidth; big.style.animation='';
+  drawAgate(big, 170, i, true, seeds[i]);
+  $('stoneName').textContent = STONES[i].name + ' agate';
+  $('noteText').textContent = NOTES[found.length];
+  show(reveal); setTimeout(()=>$('keepBtn').focus(), 60);
+}
+$('keepBtn').addEventListener('click', ()=>{
+  const i = current; found.push(i);
+  const slot = $('slots').children[found.length-1];
+  const cv=document.createElement('canvas'); slot.appendChild(cv); drawAgate(cv, 34, i, true, seeds[i]); slot.classList.add('full');
+  $('count').textContent = `${found.length} of 7 found`;
+  hide(reveal, ()=>{ if(found.length===STONES.length) setTimeout(showFinale, 500); });
+});
+
+function showFinale(){
+  const box = $('heartBox');
+  box.querySelectorAll('.hs').forEach(e=>e.remove());
+  show(finale);
+  requestAnimationFrame(()=>{
+    const w = box.clientWidth, h = box.clientHeight;
+    const hc = $('heartLine'); const d = Math.min(devicePixelRatio||1,2);
+    hc.width=w*d; hc.height=h*d; const c=hc.getContext('2d'); c.setTransform(d,0,0,d,0,0);
+    const P = t => [w/2 + 16*Math.pow(Math.sin(t),3)/17*w*0.42, h*0.44 - (13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))/17*h*0.44];
+    c.setLineDash([2,7]); c.lineWidth=2; c.lineCap='round'; c.strokeStyle='rgba(243,180,106,.55)';
+    c.beginPath(); for(let t=0;t<=Math.PI*2+0.01;t+=0.02){ const [x,y]=P(t); t?c.lineTo(x,y):c.moveTo(x,y);} c.stroke();
+    found.forEach((idx,k)=>{
+      const t = Math.PI*2*k/7 + Math.PI/7; const [x,y]=P(t);
+      const cv=document.createElement('canvas'); cv.className='hs'; cv.style.left=x+'px'; cv.style.top=y+'px';
+      cv.style.animationDelay=(0.15*k)+'s'; box.appendChild(cv); drawAgate(cv, 44, idx, true, seeds[idx]);
+    });
+  });
+  const ul=$('allNotes'); ul.innerHTML='';
+  found.forEach((idx,k)=>{ const li=document.createElement('li'); const cv=document.createElement('canvas'); li.appendChild(cv);
+    const p=document.createElement('span'); p.textContent=NOTES[k]; li.appendChild(p); ul.appendChild(li); drawAgate(cv,22,idx,true,seeds[idx]); });
+  setTimeout(()=>$('againBtn').focus(), 80);
+}
+$('readBtn').addEventListener('click', ()=>{ const ul=$('allNotes'); ul.hidden=!ul.hidden; $('readBtn').textContent = ul.hidden ? 'Read them all again' : 'Hide the notes'; });
+$('againBtn').addEventListener('click', ()=>{
+  found=[]; btns.forEach(b=>b.classList.remove('found')); buildSlots(); $('count').textContent='0 of 7 found';
+  $('allNotes').hidden=true; $('readBtn').textContent='Read them all again';
+  hide(finale, placeAgates);
+});
+$('startBtn').addEventListener('click', ()=>{ hide(intro); pouch.hidden=false; });
+
+buildSlots();
+size();
+let rt; addEventListener('resize', ()=>{ clearTimeout(rt); rt=setTimeout(()=>{ size(); btns.forEach((b,i)=>b.classList.toggle('found', found.includes(i))); }, 150); });
+if(!REDUCED) requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
